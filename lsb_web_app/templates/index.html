@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSB Image Watermarking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(138, 43, 226, 0.3), transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            color: white;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.2);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.8s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        .card h2 {
+            color: #2d3748;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #edf2f7 0%, #e6fffa 100%);
+            color: #667eea;
+        }
+
+        .file-input-label::before {
+            content: '📁';
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            color: #4a5568;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
+        }
+
+        select:hover {
+            border-color: #667eea;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 16px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .image-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .image-grid-5 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .image-box {
+            text-align: center;
+            position: relative;
+        }
+
+        .image-box h3 {
+            color: #2d3748;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .image-box h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .image-box img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-box img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.5);
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: center;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        td {
+            background: #f7fafc;
+            color: #2d3748;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        tr:nth-child(even) td {
+            background: #edf2f7;
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover td {
+            background: #e6fffa;
+        }
+
+        td:first-child {
+            font-weight: 600;
+            text-align: left;
+            padding-left: 20px;
+        }
+
+        .metric-value {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            margin-top: 50px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 25px;
+            }
+            
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 LSB Image Watermarking</h1>
+            <p class="subtitle">Secure image watermarking with advanced quality analysis</p>
+        </header>
+
+        <!-- Upload Card -->
+        <div class="card">
+            <h2>Upload Images</h2>
+            <form action="/process" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Cover Image</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="cover" id="cover" required>
+                        <label for="cover" class="file-input-label">
+                            Choose cover image
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Watermark Image</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="watermark" id="watermark" required>
+                        <label for="watermark" class="file-input-label">
+                            Choose watermark image
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>LSB Method</label>
+                    <select name="lsb_method" id="lsb_method">
+                        <option value="4bit">4-bit LSB (Higher Capacity)</option>
+                        <option value="1bit">1-bit LSB (More Imperceptible)</option>
+                    </select>
+                </div>
+
+                <button type="submit">🚀 Embed & Extract Watermark</button>
+            </form>
+        </div>
+
+        {% if result %}
+        <!-- Results -->
+        <div class="card">
+            <h2>Processing Results</h2>
+            <p style="text-align: center; color: #667eea; font-weight: 600; margin-bottom: 20px;">
+                Method Used: {{ result.method }}
+            </p>
+            <div class="image-grid">
+                <div class="image-box">
+                    <h3>🔒 Watermarked Image</h3>
+                    <div class="image-wrapper">
+                        <img src="{{ result.watermarked }}" alt="Watermarked">
+                    </div>
+                    <a href="{{ result.watermarked }}" download="watermarked.png" class="download-btn">
+                        📥 Download
+                    </a>
+                </div>
+                <div class="image-box">
+                    <h3>🔓 Extracted (Cover)</h3>
+                    <div class="image-wrapper">
+                        <img src="{{ result.extracted_cover }}" alt="Extracted from Cover">
+                    </div>
+                    <a href="{{ result.extracted_cover }}" download="extracted_cover.png" class="download-btn">
+                        📥 Download
+                    </a>
+                </div>
+                <div class="image-box">
+                    <h3>🔓 Extracted (Watermarked)</h3>
+                    <div class="image-wrapper">
+                        <img src="{{ result.extracted_watermarked }}" alt="Extracted from Watermarked">
+                    </div>
+                    <a href="{{ result.extracted_watermarked }}" download="extracted_watermarked.png" class="download-btn">
+                        📥 Download
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="card">
+            <h2>Quality Analysis</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Comparison</th>
+                            <th>MSE (Mean Squared Error)</th>
+                            <th>PSNR (Peak Signal-to-Noise Ratio)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Extracted (Watermarked) vs Watermarked</strong></td>
+                            <td class="metric-value">{{ result.mse1 }}</td>
+                            <td class="metric-value">{{ result.psnr1 }} dB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Extracted (Cover) vs Cover</strong></td>
+                            <td class="metric-value">{{ result.mse2 }}</td>
+                            <td class="metric-value">{{ result.psnr2 }} dB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <footer>
+            <p>✨ LSB Watermarking Project | B.Tech Final Year ✨</p>
+        </footer>
+    </div>
+
+    <script>
+        // Update file input labels when files are selected
+        document.getElementById('cover').addEventListener('change', function(e) {
+            const label = e.target.nextElementSibling;
+            if (e.target.files.length > 0) {
+                label.textContent = '✓ ' + e.target.files[0].name;
+                label.style.borderColor = '#48bb78';
+                label.style.color = '#48bb78';
+            }
+        });
+
+        document.getElementById('watermark').addEventListener('change', function(e) {
+            const label = e.target.nextElementSibling;
+            if (e.target.files.length > 0) {
+                label.textContent = '✓ ' + e.target.files[0].name;
+                label.style.borderColor = '#48bb78';
+                label.style.color = '#48bb78';
+            }
+        });
+    </script>
+</body>
+</html>
